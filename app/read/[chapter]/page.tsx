@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ChapterNav } from "@/components/reader/chapter-nav";
 import { Reader } from "@/components/reader/reader";
 import { TextLink } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,8 +49,6 @@ async function Chapter({ params }: { params: PageProps<"/read/[chapter]">["param
         chapter={n}
         paragraphs={getChapter(n)}
         notes={getNotes(n)}
-        heading={<h1 className="font-serif text-3xl">Chapter {n}</h1>}
-        after={<ChapterNav chapter={n} />}
         resumable
       />
     </>

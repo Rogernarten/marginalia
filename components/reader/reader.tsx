@@ -7,9 +7,10 @@ import type { Note } from "@/lib/notes/types";
 import { findWord, removeWord, useSaved, type Word } from "@/lib/storage";
 import { toRuns } from "@/lib/text";
 import { AddWordButton } from "./add-word-button";
+import { ChapterNav } from "./chapter-nav";
 import { Legend } from "./legend";
 import { NoteCard } from "./note-card";
-import { arrivalTarget, jumpTo, useReadingPosition } from "./reading-position";
+import { arrivalTarget, jumpTo, useReadingPosition, useReadingTimer } from "./reading-position";
 import { useMediaQuery } from "./use-media-query";
 import { WordCard } from "./word-card";
 
@@ -22,20 +23,23 @@ const SAVED = "saved-";
  *
  * With `resumable`, reopening the chapter you stopped in offers to jump back to your paragraph,
  * unless you arrived with #p-N (Continue links), which jumps straight there.
+ *
+ * It renders its own heading and chapter links rather than taking them as elements from the
+ * server page: server-made elements placed among other children here tripped React's key check
+ * on some client navigations.
  */
 export function Reader({
   chapter,
   paragraphs,
   notes,
-  heading,
-  after,
+  headingLevel = 1,
   resumable = false,
 }: {
   chapter: number;
   paragraphs: string[];
   notes: Note[];
-  heading: React.ReactNode;
-  after?: React.ReactNode;
+  /** 1 on a chapter's own page; 2 on the home page, under its own title. */
+  headingLevel?: 1 | 2;
   resumable?: boolean;
 }) {
   const saved = useSaved();
@@ -47,6 +51,7 @@ export function Reader({
   // The Esc listener calls the latest close(), which depends on render state.
   const closeRef = useRef(() => {});
   useReadingPosition(chapter);
+  useReadingTimer();
 
   // Decided once, when saved data first arrives, so the offer doesn't chase the reader's scroll.
   // No offer when this visit already opens at a paragraph (a Continue link).
@@ -153,7 +158,11 @@ export function Reader({
     <div className="lg:grid lg:grid-cols-[minmax(0,38rem)_20rem] lg:gap-16">
       <article className="min-w-0">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          {heading}
+          {headingLevel === 1 ? (
+            <h1 className="font-serif text-3xl">Chapter {chapter}</h1>
+          ) : (
+            <h2 className="font-serif text-2xl">Chapter {chapter}</h2>
+          )}
           <AddWordButton chapter={chapter} />
         </div>
         {resumeAt != null && (
@@ -185,7 +194,7 @@ export function Reader({
             />
           ))}
         </div>
-        {after}
+        <ChapterNav chapter={chapter} />
       </article>
 
       <aside aria-label="Notes" className="hidden lg:block">
