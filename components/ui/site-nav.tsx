@@ -50,7 +50,7 @@ export function SiteNav() {
                 Notebook
                 {count > 0 && (
                   <>
-                    <span aria-hidden="true" className="rounded-full bg-saved px-2 text-xs font-semibold text-ink">
+                    <span aria-hidden="true" className="inline-block rounded-full bg-saved px-2 text-xs font-semibold text-ink">
                       {count}
                     </span>
                     <span className="sr-only">, {count === 1 ? "1 word" : `${count} words`}</span>

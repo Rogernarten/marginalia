@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Libre_Caslon_Text } from "next/font/google";
 import { SiteNav } from "@/components/ui/site-nav";
 import { StorageNotice } from "@/components/ui/storage-notice";
+import { Toaster } from "@/components/ui/toast";
 import "./globals.css";
 
 const ui = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main id="main" tabIndex={-1} className="outline-none">
           {children}
         </main>
+        <Toaster />
       </body>
     </html>
   );
