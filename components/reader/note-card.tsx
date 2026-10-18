@@ -1,0 +1,137 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cx, FOCUS } from "@/components/ui/cx";
+import { KIND_LABEL, MORE_LABEL, type Note } from "@/lib/notes/types";
+import { addWord, findWord, removeWord, useSaved } from "@/lib/storage";
+import { sentenceAt } from "@/lib/text";
+
+/** The note shown in the margin (wide screens) or the bottom sheet (small screens). */
+export function NoteCard({
+  note,
+  chapter,
+  paragraph,
+  headingRef,
+  onClose,
+}: {
+  note: Note;
+  chapter: number;
+  /** Raw text of the paragraph the note belongs to, for saving its sentence. */
+  paragraph: string;
+  headingRef: React.Ref<HTMLHeadingElement>;
+  onClose: () => void;
+}) {
+  const saved = useSaved();
+  const [more, setMore] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [status, setStatus] = useState("");
+  // The Save and Remove buttons swap places; keep focus on whichever replaced the one pressed.
+  const refocus = useRef(false);
+  const actionRef = useRef<HTMLButtonElement>(null);
+  const inNotebook = saved ? findWord(saved, note.phrase) : undefined;
+  const headingId = `${note.id}-heading`;
+
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    actionRef.current?.focus();
+  }, [inNotebook]);
+
+  function save() {
+    const result = addWord({
+      phrase: note.phrase,
+      chapter,
+      paragraph: note.paragraph,
+      sentence: sentenceAt(paragraph, paragraph.indexOf(note.phrase)),
+      noteId: note.id,
+      myNote: "",
+    });
+    setJustSaved(result.ok);
+    refocus.current = true;
+    setStatus(
+      result.ok
+        ? `Saved “${note.phrase}” to your notebook.`
+        : `“${note.phrase}” is already in your notebook.`,
+    );
+  }
+
+  function remove() {
+    if (!inNotebook) return;
+    removeWord(inNotebook.id);
+    setJustSaved(false);
+    refocus.current = true;
+    setStatus(`Removed “${note.phrase}” from your notebook.`);
+  }
+
+  return (
+    <section aria-labelledby={headingId} className="font-sans">
+      <div className="flex items-center justify-between gap-3">
+        <p className="eyebrow flex items-center gap-2">
+          <span aria-hidden="true" className="swatch font-serif text-sm tracking-normal normal-case" data-kind={note.kind}>
+            Aa
+          </span>
+          {KIND_LABEL[note.kind]}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close note"
+          className={cx("-mr-2 flex size-11 cursor-pointer items-center justify-center rounded-md text-2xl leading-none text-muted hover:text-ink", FOCUS)}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+
+      <h2
+        id={headingId}
+        ref={headingRef}
+        tabIndex={-1}
+        className="mt-1 rounded-sm font-serif text-2xl leading-snug focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+      >
+        {note.phrase}
+      </h2>
+      <p className="mt-3 font-serif text-lg leading-relaxed">{note.short}</p>
+
+      <button
+        type="button"
+        aria-expanded={more}
+        aria-controls={`${note.id}-more`}
+        onClick={() => setMore(!more)}
+        className={cx("mt-3 -ml-1 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-1 text-[0.9375rem] font-medium underline decoration-edge underline-offset-4 hover:decoration-ink", FOCUS)}
+      >
+        {more ? "Less" : "More"}
+        <svg aria-hidden="true" viewBox="0 0 12 12" className={cx("size-3 transition-transform", more && "rotate-180")}>
+          <path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div id={`${note.id}-more`} hidden={!more} className="mt-1 border-l-2 border-rule pl-4">
+        <h3 className="eyebrow">{MORE_LABEL[note.kind]}</h3>
+        <p className="mt-1.5 font-serif text-base leading-relaxed">{note.more}</p>
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        {inNotebook ? (
+          <>
+            <p className="flex items-center gap-2 text-[0.9375rem] font-medium">
+              <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-accent text-xs text-white">
+                ✓
+              </span>
+              In your notebook
+            </p>
+            <Button ref={actionRef} variant="secondary" onClick={remove}>
+              {justSaved ? "Undo" : "Remove"}
+            </Button>
+          </>
+        ) : (
+          <Button ref={actionRef} onClick={save}>
+            Save to notebook
+          </Button>
+        )}
+      </div>
+      <p role="status" className="sr-only">
+        {status}
+      </p>
+    </section>
+  );
+}
