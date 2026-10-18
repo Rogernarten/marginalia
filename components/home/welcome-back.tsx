@@ -113,12 +113,13 @@ function WeekCard({ week }: { week: Week }) {
         </span>
       </p>
 
-      <ol
+      <div
+        role="img"
         className="mt-4 flex justify-between gap-1"
         aria-label={readDays.length ? `Read on ${listOf(readDays)}.` : "No reading days yet this week."}
       >
         {week.days.map((d) => (
-          <li key={d.label} aria-hidden="true" className="flex flex-col items-center gap-1.5">
+          <div key={d.label} className="flex flex-col items-center gap-1.5">
             <span
               className={cx(
                 "flex size-8 items-center justify-center rounded-full border-2 text-xs font-semibold",
@@ -131,9 +132,9 @@ function WeekCard({ week }: { week: Week }) {
               {d.read ? "✓" : ""}
             </span>
             <span className={cx("text-xs", d.today ? "font-semibold text-ink" : "text-muted")}>{d.label[0]}</span>
-          </li>
+          </div>
         ))}
-      </ol>
+      </div>
 
       <p className="mt-4 font-sans text-sm leading-relaxed">
         {today?.read

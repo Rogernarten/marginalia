@@ -193,6 +193,7 @@ export function AddWordForm() {
           id="phrase"
           label="Word or phrase"
           hint="As it appears in the chapter, e.g. “Michaelmas” or “in want of”."
+          required
           autoComplete="off"
           spellCheck={false}
           value={values.phrase}

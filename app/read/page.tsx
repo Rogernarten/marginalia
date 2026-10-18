@@ -29,13 +29,19 @@ export default function Contents() {
       <ol className="max-w-[38rem] divide-y divide-rule border-y border-rule">
         {chapters.map((n) => (
           <li key={n}>
-            <Link href={`/read/${n}`} className={cx("group flex items-baseline gap-4 rounded-sm py-3", FOCUS)}>
+            <Link
+              href={`/read/${n}`}
+              className={cx("group flex flex-wrap items-baseline gap-x-4 gap-y-1.5 rounded-sm py-3", FOCUS)}
+            >
               <span className="w-24 shrink-0 font-sans text-sm font-medium group-hover:underline">Chapter {n}</span>
-              <span className="min-w-0 flex-1 font-serif text-[1.0625rem] text-muted">{opening(n)}</span>
-              <HereBadge chapter={n} />
-              {hasNotes(n) && (
-                <span className="shrink-0 rounded-full border border-edge px-2 py-0.5 font-sans text-xs">Guide notes</span>
-              )}
+              <span className="min-w-[12rem] flex-1 font-serif text-[1.0625rem] text-muted">{opening(n)}</span>
+              {/* Badges wrap under the chapter on narrow screens. */}
+              <span className="flex shrink-0 gap-2 empty:hidden">
+                <HereBadge chapter={n} />
+                {hasNotes(n) && (
+                  <span className="rounded-full border border-edge px-2 py-0.5 font-sans text-xs">Guide notes</span>
+                )}
+              </span>
             </Link>
           </li>
         ))}

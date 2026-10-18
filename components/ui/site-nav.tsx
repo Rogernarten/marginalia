@@ -11,7 +11,7 @@ function NavLink({ href, current, children }: { href: string; current?: "page" |
       href={href}
       aria-current={current}
       className={cx(
-        "flex min-h-11 items-center gap-1.5 rounded-md px-3 text-[0.9375rem] underline-offset-[0.6rem] hover:underline hover:decoration-edge",
+        "flex min-h-11 items-center gap-1.5 rounded-md px-2 text-[0.9375rem] underline-offset-[0.6rem] hover:underline hover:decoration-edge sm:px-3",
         current && "font-semibold underline decoration-accent decoration-2 hover:decoration-accent",
         FOCUS,
       )}
@@ -30,7 +30,7 @@ export function SiteNav() {
 
   return (
     <header className="border-b border-rule">
-      <div className="mx-auto flex max-w-[62rem] items-center justify-between gap-4 px-5 py-2">
+      <div className="mx-auto flex max-w-[62rem] items-center justify-between gap-2 px-4 py-2 sm:gap-4 sm:px-5">
         <Link
           href="/"
           aria-current={path === "/" ? "page" : undefined}
@@ -39,7 +39,7 @@ export function SiteNav() {
           Marginalia
         </Link>
         <nav aria-label="Main">
-          <ul className="flex items-center gap-1">
+          <ul className="flex items-center sm:gap-1">
             <li>
               <NavLink href="/read" current={section("/read")}>
                 Read
