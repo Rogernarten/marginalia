@@ -26,7 +26,16 @@ for (const line of lines.slice(start, end)) {
 const chapters = [[]];
 let paragraph = [];
 const flush = () => {
-  if (paragraph.length) chapters.at(-1).push(paragraph.join(" ").replace(/\s+/g, " ").trim());
+  if (!paragraph.length) return;
+  const text = paragraph
+    .join(" ")
+    .replace(/^\/\*\s*(?:NIND|RIGHT)?\s*|\s*\*\/$/g, "") // letter typesetting: /* NIND ... */
+    .replace(/\s+/g, " ")
+    .trim();
+  const current = chapters.at(-1);
+  // An illustration can interrupt a sentence; the rest then starts in lowercase.
+  if (/^[a-z]/.test(text) && current.length) current[current.length - 1] += ` ${text}`;
+  else current.push(text);
   paragraph = [];
 };
 for (const line of body) {
