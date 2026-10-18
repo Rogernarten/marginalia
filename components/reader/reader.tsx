@@ -4,17 +4,21 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import type { Note } from "@/lib/notes/types";
-import { findWord, useSaved } from "@/lib/storage";
+import { findWord, removeWord, useSaved, type Word } from "@/lib/storage";
 import { toRuns } from "@/lib/text";
 import { AddWordButton } from "./add-word-button";
 import { Legend } from "./legend";
 import { NoteCard } from "./note-card";
 import { arrivalTarget, jumpTo, useReadingPosition } from "./reading-position";
 import { useMediaQuery } from "./use-media-query";
+import { WordCard } from "./word-card";
+
+const SAVED = "saved-";
 
 /**
- * A chapter with its underlined words. Opening a word shows its note in the margin on wide
- * screens, or in a bottom sheet on small ones. Esc or × closes it and returns focus to the word.
+ * A chapter with its underlined words (guide notes) and shaded words (ones the reader saved
+ * themselves). Opening either shows it in the margin on wide screens, or in a bottom sheet on
+ * small ones. Esc or × closes it and returns focus to the word.
  *
  * With `resumable`, reopening the chapter you stopped in offers to jump back to your paragraph,
  * unless you arrived with #p-N (Continue links), which jumps straight there.
@@ -40,6 +44,8 @@ export function Reader({
   const trigger = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const sheet = useRef<HTMLDialogElement>(null);
+  // The Esc listener calls the latest close(), which depends on render state.
+  const closeRef = useRef(() => {});
   useReadingPosition(chapter);
 
   // Decided once, when saved data first arrives, so the offer doesn't chase the reader's scroll.
@@ -56,59 +62,92 @@ export function Reader({
     for (const n of notes) map.set(n.paragraph, [...(map.get(n.paragraph) ?? []), n]);
     return map;
   }, [notes]);
-  const active = notes.find((n) => n.id === activeId) ?? null;
+  const activeNote = notes.find((n) => n.id === activeId) ?? null;
+  // A removed word is kept here so its card can offer Undo after it leaves the page.
+  const [removed, setRemoved] = useState<Word | null>(null);
+  const activeWord = activeId?.startsWith(SAVED)
+    ? (saved?.words.find((w) => SAVED + w.id === activeId) ?? (removed && SAVED + removed.id === activeId ? removed : null))
+    : null;
+  // A boolean, so saving or removing (which changes the word object) doesn't re-run effects.
+  const isOpen = (activeNote ?? activeWord) !== null;
   // Words saved with the form (no note of their own) are shaded where they were found.
   const marks = useMemo(() => {
     const map = new Map<number, { id: string; phrase: string }[]>();
     for (const w of saved?.words ?? []) {
       if (w.chapter !== chapter || w.noteId) continue;
-      map.set(w.paragraph, [...(map.get(w.paragraph) ?? []), { id: `saved-${w.id}`, phrase: w.phrase }]);
+      map.set(w.paragraph, [...(map.get(w.paragraph) ?? []), { id: SAVED + w.id, phrase: w.phrase }]);
     }
     return map;
   }, [saved, chapter]);
 
-  function open(note: Note, el: HTMLElement) {
+  function open(id: string, el: HTMLElement) {
     trigger.current = el;
-    setActiveId(note.id);
+    setActiveId(id);
+    setRemoved(null);
+  }
+
+  // Back to the word that was opened (re-found if Undo re-created it), or to its paragraph if
+  // it was removed.
+  function restoreFocus() {
+    const again = [...document.querySelectorAll<HTMLElement>(`[data-chapter="${chapter}"] [data-id="${activeId}"]`)];
+    const el = trigger.current?.isConnected ? trigger.current : again.find((e) => e.checkVisibility());
+    if (el) el.focus();
+    else if (removed) jumpTo(chapter, removed.paragraph);
   }
 
   function close() {
     setActiveId(null);
-    trigger.current?.focus();
+    setRemoved(null);
+    restoreFocus();
   }
+
+  useEffect(() => {
+    closeRef.current = close;
+  });
 
   // Show or hide the bottom sheet, and move focus to the note's heading.
   useEffect(() => {
     const dialog = sheet.current;
     if (!wide && dialog) {
-      if (active && !dialog.open) dialog.showModal();
-      if (!active && dialog.open) dialog.close();
+      if (isOpen && !dialog.open) dialog.showModal();
+      if (!isOpen && dialog.open) dialog.close();
     }
-    if (active) headingRef.current?.focus();
-  }, [active, wide]);
+    if (isOpen) headingRef.current?.focus();
+  }, [activeId, isOpen, wide]);
 
   // Esc closes the margin note wherever focus is (the dialog handles Esc itself).
   useEffect(() => {
-    if (!active || !wide) return;
+    if (!isOpen || !wide) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setActiveId(null);
-      trigger.current?.focus();
+      // Something inside (the note editor) already handled this Esc.
+      if (e.key === "Escape" && !e.defaultPrevented) closeRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [active, wide]);
+  }, [isOpen, wide]);
 
-  const card = active && (
+  const card = activeNote ? (
     <NoteCard
-      key={active.id}
-      note={active}
+      key={activeNote.id}
+      note={activeNote}
       chapter={chapter}
-      paragraph={paragraphs[active.paragraph]}
+      paragraph={paragraphs[activeNote.paragraph]}
       headingRef={headingRef}
       onClose={close}
     />
-  );
+  ) : activeWord ? (
+    <WordCard
+      key={activeWord.id}
+      word={activeWord}
+      removed={!saved?.words.some((w) => w.id === activeWord.id)}
+      headingRef={headingRef}
+      onRemove={() => {
+        setRemoved(activeWord);
+        removeWord(activeWord.id);
+      }}
+      onClose={close}
+    />
+  ) : null;
 
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,38rem)_20rem] lg:gap-16">
@@ -159,7 +198,7 @@ export function Reader({
               <p className="mt-2 font-serif text-lg leading-snug">
                 {notes.length > 0
                   ? "Tap an underlined word to see what it meant in 1813."
-                  : "Guide notes cover Chapters 1 to 3."}
+                  : "Guide notes cover Chapters 1 to 3. Words you save here are shaded; tap one to see your note."}
               </p>
               {notes.length > 0 && <Legend className="mt-4" />}
               <p className="mt-4 font-sans text-sm leading-relaxed text-muted">
@@ -178,7 +217,7 @@ export function Reader({
         <dialog
           ref={sheet}
           className="sheet"
-          aria-labelledby={active ? `${active.id}-heading` : undefined}
+          aria-labelledby={activeNote ? `${activeNote.id}-heading` : activeWord ? `${SAVED}${activeWord.id}-heading` : undefined}
           onClose={() => activeId && close()}
           onClick={(e) => e.target === e.currentTarget && close()}
         >
@@ -204,7 +243,7 @@ function Paragraph({
   marks: { id: string; phrase: string }[];
   activeId: string | null;
   isSaved: (phrase: string) => boolean;
-  onOpen: (note: Note, el: HTMLElement) => void;
+  onOpen: (id: string, el: HTMLElement) => void;
 }) {
   const runs = toRuns(text, [...notes, ...marks]);
   const parts: React.ReactNode[] = [];
@@ -216,23 +255,24 @@ function Paragraph({
     while (j < runs.length && runs[j].noteId === noteId) j++;
     const inner = runs.slice(i, j).map((r, k) => (r.italic ? <em key={k}>{r.text}</em> : r.text));
     const note = noteId ? notes.find((n) => n.id === noteId) : undefined;
-    if (noteId?.startsWith("saved-")) {
+    if (noteId?.startsWith(SAVED)) {
       parts.push(
-        <mark key={i} className="rounded-sm bg-saved text-ink">
+        <OpenableWord key={i} id={noteId} kind="mine" saved active={activeId === noteId} onOpen={onOpen}>
           {inner}
-        </mark>,
+        </OpenableWord>,
       );
     } else if (note) {
       parts.push(
-        <NoteWord
+        <OpenableWord
           key={i}
-          note={note}
-          active={activeId === note.id}
+          id={note.id}
+          kind={note.kind}
           saved={isSaved(note.phrase)}
+          active={activeId === note.id}
           onOpen={onOpen}
         >
           {inner}
-        </NoteWord>,
+        </OpenableWord>,
       );
     } else {
       parts.push(<Fragment key={i}>{inner}</Fragment>);
@@ -248,17 +288,20 @@ function Paragraph({
 }
 
 // A span with role="button" rather than <button>, so long phrases wrap across lines like text.
-function NoteWord({
-  note,
+function OpenableWord({
+  id,
+  kind,
   active,
   saved,
   onOpen,
   children,
 }: {
-  note: Note;
+  id: string;
+  /** "mine" is a word the reader saved themselves, shown shaded without an underline. */
+  kind: Note["kind"] | "mine";
   active: boolean;
   saved: boolean;
-  onOpen: (note: Note, el: HTMLElement) => void;
+  onOpen: (id: string, el: HTMLElement) => void;
   children: React.ReactNode;
 }) {
   return (
@@ -266,14 +309,15 @@ function NoteWord({
       role="button"
       tabIndex={0}
       className="note-word"
-      data-kind={note.kind}
+      data-id={id}
+      data-kind={kind}
       data-saved={saved}
       aria-expanded={active}
-      onClick={(e) => onOpen(note, e.currentTarget)}
+      onClick={(e) => onOpen(id, e.currentTarget)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onOpen(note, e.currentTarget);
+          onOpen(id, e.currentTarget);
         }
       }}
     >

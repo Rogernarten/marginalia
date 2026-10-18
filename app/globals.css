@@ -64,6 +64,13 @@ html {
   background: var(--color-saved);
   text-decoration-style: solid;
 }
+/* A word the reader saved themselves: shaded, no underline. */
+.note-word[data-kind="mine"] {
+  text-decoration-line: none;
+}
+.note-word[data-kind="mine"]:hover {
+  background: #ecd595;
+}
 .note-word[aria-expanded="true"] {
   background: var(--color-saved);
   box-shadow: 0 2px 0 var(--color-ink);

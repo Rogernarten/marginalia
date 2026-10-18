@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NoteEditor } from "@/components/notebook/note-editor";
 import { Button } from "@/components/ui/button";
 import { cx, FOCUS } from "@/components/ui/cx";
 import { KIND_LABEL, MORE_LABEL, type Note } from "@/lib/notes/types";
@@ -25,6 +26,8 @@ export function NoteCard({
   const saved = useSaved();
   const [more, setMore] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const editButton = useRef<HTMLButtonElement>(null);
   const [status, setStatus] = useState("");
   // The Save and Remove buttons swap places; keep focus on whichever replaced the one pressed.
   const refocus = useRef(false);
@@ -110,19 +113,42 @@ export function NoteCard({
         <p className="mt-1.5 font-serif text-base leading-relaxed">{note.more}</p>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      {inNotebook?.myNote && !editing && (
+        <div className="mt-4 rounded-md bg-paper px-3 py-2.5">
+          <h3 className="eyebrow">Your note</h3>
+          <p className="mt-1 font-serif text-base leading-relaxed">{inNotebook.myNote}</p>
+        </div>
+      )}
+      {inNotebook && editing && (
+        <div className="mt-4">
+          <NoteEditor
+            word={inNotebook}
+            onDone={() => {
+              setEditing(false);
+              requestAnimationFrame(() => editButton.current?.focus());
+            }}
+          />
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-3">
         {inNotebook ? (
-          <>
-            <p className="flex items-center gap-2 text-[0.9375rem] font-medium">
-              <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-accent text-xs text-white">
-                ✓
-              </span>
-              In your notebook
-            </p>
-            <Button ref={actionRef} variant="secondary" onClick={remove}>
-              {justSaved ? "Undo" : "Remove"}
-            </Button>
-          </>
+          !editing && (
+            <>
+              <p className="mr-2 flex items-center gap-2 text-[0.9375rem] font-medium">
+                <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-accent text-xs text-white">
+                  ✓
+                </span>
+                In your notebook
+              </p>
+              <Button ref={editButton} variant="secondary" onClick={() => setEditing(true)}>
+                {inNotebook.myNote ? "Edit note" : "Add a note"}
+              </Button>
+              <Button ref={actionRef} variant="quiet" onClick={remove}>
+                {justSaved ? "Undo" : "Remove"}
+              </Button>
+            </>
+          )
         ) : (
           <Button ref={actionRef} onClick={save}>
             Save to notebook
