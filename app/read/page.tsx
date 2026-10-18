@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContinueReading, HereBadge } from "@/components/reader/contents-progress";
 import { cx, FOCUS } from "@/components/ui/cx";
 import { getChapter } from "@/lib/book";
 import { CHAPTER_COUNT } from "@/lib/chapters";
@@ -21,6 +22,9 @@ export default function Contents() {
         <p className="eyebrow">Pride and Prejudice · Jane Austen · 1813</p>
         <h1 className="mt-2 font-serif text-3xl">Contents</h1>
         <p className="mt-3 text-muted">Guide notes cover Chapters 1 to 3. Every chapter can be read in full.</p>
+        <div className="mt-6">
+          <ContinueReading />
+        </div>
       </header>
       <ol className="max-w-[38rem] divide-y divide-rule border-y border-rule">
         {chapters.map((n) => (
@@ -28,6 +32,7 @@ export default function Contents() {
             <Link href={`/read/${n}`} className={cx("group flex items-baseline gap-4 rounded-sm py-3", FOCUS)}>
               <span className="w-24 shrink-0 font-sans text-sm font-medium group-hover:underline">Chapter {n}</span>
               <span className="min-w-0 flex-1 font-serif text-[1.0625rem] text-muted">{opening(n)}</span>
+              <HereBadge chapter={n} />
               {hasNotes(n) && (
                 <span className="shrink-0 rounded-full border border-edge px-2 py-0.5 font-sans text-xs">Guide notes</span>
               )}
