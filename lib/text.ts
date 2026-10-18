@@ -61,3 +61,27 @@ export function sentenceAt(paragraph: string, index: number) {
   }
   return plain(paragraph.slice(start)).trim();
 }
+
+/**
+ * Find `phrase` in a chapter: case-insensitive, whole words only, ignoring italics and curly
+ * quotes. A second pass ignores hyphens, so "tomorrow" finds the book's "To-morrow".
+ * Returns the text as the book has it, plus its paragraph and sentence.
+ */
+export function findPhrase(paragraphs: string[], phrase: string) {
+  const needle = normalize(phrase);
+  if (!needle) return null;
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exact = escape(needle).replace(/ /g, "\\s+");
+  const loose = [...needle.replace(/-/g, "")].map((ch) => (ch === " " ? "\\s+" : escape(ch))).join("-?");
+  for (const pattern of [exact, loose]) {
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${pattern}(?![\\p{L}\\p{N}])`, "u");
+    for (let i = 0; i < paragraphs.length; i++) {
+      const text = plain(paragraphs[i]);
+      const m = re.exec(text.toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"'));
+      if (m) {
+        return { paragraph: i, match: text.slice(m.index, m.index + m[0].length), sentence: sentenceAt(text, m.index) };
+      }
+    }
+  }
+  return null;
+}

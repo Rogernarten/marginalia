@@ -122,6 +122,13 @@ export function positionHref(position: { chapter: number; paragraph: number }) {
   return `/read/${position.chapter}#p-${position.paragraph}`;
 }
 
+/* ---------- Form draft ---------- */
+
+/** What's typed in the save-a-word form, kept until it's saved or cleared. */
+export function setDraft(draft: Saved["draft"]) {
+  write((s) => ({ ...s, draft }));
+}
+
 /* ---------- Words ---------- */
 
 export function findWord(saved: Saved, phrase: string) {
