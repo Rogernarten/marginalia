@@ -122,6 +122,22 @@ export function positionHref(position: { chapter: number; paragraph: number }) {
   return `/read/${position.chapter}#p-${position.paragraph}`;
 }
 
+/* ---------- Reading time and weekly goal ---------- */
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function addReadingSeconds(seconds: number) {
+  const key = todayKey();
+  write((s) => ({ ...s, days: { ...s.days, [key]: (s.days[key] ?? 0) + seconds } }));
+}
+
+export function setWeeklyGoal(days: number) {
+  write((s) => ({ ...s, weeklyGoal: Math.min(7, Math.max(1, Math.round(days))) }));
+}
+
 /* ---------- Form draft ---------- */
 
 /** What's typed in the save-a-word form, kept until it's saved or cleared. */

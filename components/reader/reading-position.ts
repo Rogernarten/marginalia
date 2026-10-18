@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { setPosition } from "@/lib/storage";
+import { addReadingSeconds, setPosition } from "@/lib/storage";
 
 // Next.js keeps pages you've left in the DOM, hidden (React <Activity>), so the same chapter or
 // paragraph ids can exist twice. Only ever look inside the visible chapter.
@@ -69,4 +69,29 @@ export function useReadingPosition(chapter: number) {
       window.clearTimeout(firstLook);
     };
   }, [chapter]);
+}
+
+const TICK = 15_000;
+const IDLE = 90_000;
+
+/**
+ * Counts reading time toward today: every 15 seconds while the tab is visible and the reader
+ * has scrolled, tapped or pressed a key in the last 90 seconds.
+ */
+export function useReadingTimer() {
+  useEffect(() => {
+    let lastActive = Date.now();
+    const active = () => {
+      lastActive = Date.now();
+    };
+    const events = ["scroll", "wheel", "keydown", "pointerdown", "pointermove", "touchstart"] as const;
+    events.forEach((e) => window.addEventListener(e, active, { passive: true }));
+    const tick = window.setInterval(() => {
+      if (document.visibilityState === "visible" && Date.now() - lastActive < IDLE) addReadingSeconds(TICK / 1000);
+    }, TICK);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, active));
+      window.clearInterval(tick);
+    };
+  }, []);
 }
