@@ -44,7 +44,7 @@ export function HomeGate({ paragraphs, notes, after }: { paragraphs: string[]; n
             chapter={1}
             paragraphs={paragraphs}
             notes={notes}
-            heading={<h2 className="mb-6 font-serif text-2xl">Chapter 1</h2>}
+            heading={<h2 className="font-serif text-2xl">Chapter 1</h2>}
             after={after}
           />
         </>

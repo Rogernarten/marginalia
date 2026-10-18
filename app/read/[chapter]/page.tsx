@@ -50,7 +50,7 @@ async function Chapter({ params }: { params: PageProps<"/read/[chapter]">["param
         chapter={n}
         paragraphs={getChapter(n)}
         notes={getNotes(n)}
-        heading={<h1 className="mb-6 font-serif text-3xl">Chapter {n}</h1>}
+        heading={<h1 className="font-serif text-3xl">Chapter {n}</h1>}
         after={<ChapterNav chapter={n} />}
         resumable
       />

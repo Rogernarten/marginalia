@@ -6,6 +6,7 @@ import { Notice } from "@/components/ui/notice";
 import type { Note } from "@/lib/notes/types";
 import { findWord, useSaved } from "@/lib/storage";
 import { toRuns } from "@/lib/text";
+import { AddWordButton } from "./add-word-button";
 import { Legend } from "./legend";
 import { NoteCard } from "./note-card";
 import { arrivalTarget, jumpTo, useReadingPosition } from "./reading-position";
@@ -56,6 +57,15 @@ export function Reader({
     return map;
   }, [notes]);
   const active = notes.find((n) => n.id === activeId) ?? null;
+  // Words saved with the form (no note of their own) are shaded where they were found.
+  const marks = useMemo(() => {
+    const map = new Map<number, { id: string; phrase: string }[]>();
+    for (const w of saved?.words ?? []) {
+      if (w.chapter !== chapter || w.noteId) continue;
+      map.set(w.paragraph, [...(map.get(w.paragraph) ?? []), { id: `saved-${w.id}`, phrase: w.phrase }]);
+    }
+    return map;
+  }, [saved, chapter]);
 
   function open(note: Note, el: HTMLElement) {
     trigger.current = el;
@@ -103,7 +113,10 @@ export function Reader({
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,38rem)_20rem] lg:gap-16">
       <article className="min-w-0">
-        {heading}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          {heading}
+          <AddWordButton chapter={chapter} />
+        </div>
         {resumeAt != null && (
           <Notice className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <span>You stopped at paragraph {resumeAt + 1} of this chapter.</span>
@@ -126,6 +139,7 @@ export function Reader({
               index={i}
               text={text}
               notes={byParagraph.get(i) ?? []}
+              marks={marks.get(i) ?? []}
               activeId={activeId}
               isSaved={(phrase) => !!saved && !!findWord(saved, phrase)}
               onOpen={open}
@@ -148,7 +162,13 @@ export function Reader({
                   : "Guide notes cover Chapters 1 to 3."}
               </p>
               {notes.length > 0 && <Legend className="mt-4" />}
-              <p className="mt-4 font-sans text-sm text-muted">Using a keyboard? Tab to a word and press Enter.</p>
+              <p className="mt-4 font-sans text-sm leading-relaxed text-muted">
+                {notes.length > 0 ? "Not underlined? " : "Found a word you don’t know? "}
+                Select it in the text, then choose <strong className="font-semibold text-ink">+ Add a word</strong>.
+              </p>
+              {notes.length > 0 && (
+                <p className="mt-2 font-sans text-sm text-muted">Using a keyboard? Tab to a word and press Enter.</p>
+              )}
             </>
           )}
         </div>
@@ -173,6 +193,7 @@ function Paragraph({
   index,
   text,
   notes,
+  marks,
   activeId,
   isSaved,
   onOpen,
@@ -180,11 +201,12 @@ function Paragraph({
   index: number;
   text: string;
   notes: Note[];
+  marks: { id: string; phrase: string }[];
   activeId: string | null;
   isSaved: (phrase: string) => boolean;
   onOpen: (note: Note, el: HTMLElement) => void;
 }) {
-  const runs = toRuns(text, notes);
+  const runs = toRuns(text, [...notes, ...marks]);
   const parts: React.ReactNode[] = [];
 
   // Group consecutive runs that belong to the same note into one underlined word.
@@ -194,7 +216,13 @@ function Paragraph({
     while (j < runs.length && runs[j].noteId === noteId) j++;
     const inner = runs.slice(i, j).map((r, k) => (r.italic ? <em key={k}>{r.text}</em> : r.text));
     const note = noteId ? notes.find((n) => n.id === noteId) : undefined;
-    if (note) {
+    if (noteId?.startsWith("saved-")) {
+      parts.push(
+        <mark key={i} className="rounded-sm bg-saved text-ink">
+          {inner}
+        </mark>,
+      );
+    } else if (note) {
       parts.push(
         <NoteWord
           key={i}
