@@ -1,16 +1,22 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import type { Note } from "@/lib/notes/types";
 import { findWord, useSaved } from "@/lib/storage";
 import { toRuns } from "@/lib/text";
 import { Legend } from "./legend";
 import { NoteCard } from "./note-card";
+import { arrivalTarget, jumpTo, useReadingPosition } from "./reading-position";
 import { useMediaQuery } from "./use-media-query";
 
 /**
  * A chapter with its underlined words. Opening a word shows its note in the margin on wide
  * screens, or in a bottom sheet on small ones. Esc or × closes it and returns focus to the word.
+ *
+ * With `resumable`, reopening the chapter you stopped in offers to jump back to your paragraph,
+ * unless you arrived with #p-N (Continue links), which jumps straight there.
  */
 export function Reader({
   chapter,
@@ -18,12 +24,14 @@ export function Reader({
   notes,
   heading,
   after,
+  resumable = false,
 }: {
   chapter: number;
   paragraphs: string[];
   notes: Note[];
   heading: React.ReactNode;
   after?: React.ReactNode;
+  resumable?: boolean;
 }) {
   const saved = useSaved();
   const wide = useMediaQuery("(min-width: 64rem)");
@@ -31,6 +39,16 @@ export function Reader({
   const trigger = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const sheet = useRef<HTMLDialogElement>(null);
+  useReadingPosition(chapter);
+
+  // Decided once, when saved data first arrives, so the offer doesn't chase the reader's scroll.
+  // No offer when this visit already opens at a paragraph (a Continue link).
+  const [resumeAt, setResumeAt] = useState<number | null | undefined>(undefined);
+  if (saved && resumeAt === undefined) {
+    const p = saved.position;
+    const offer = resumable && p?.chapter === chapter && p.paragraph > 1 && arrivalTarget(chapter) === null;
+    setResumeAt(offer ? p.paragraph : null);
+  }
 
   const byParagraph = useMemo(() => {
     const map = new Map<number, Note[]>();
@@ -86,8 +104,22 @@ export function Reader({
     <div className="lg:grid lg:grid-cols-[minmax(0,38rem)_20rem] lg:gap-16">
       <article className="min-w-0">
         {heading}
+        {resumeAt != null && (
+          <Notice className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <span>You stopped at paragraph {resumeAt + 1} of this chapter.</span>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setResumeAt(null);
+                requestAnimationFrame(() => jumpTo(chapter, resumeAt));
+              }}
+            >
+              Jump there
+            </Button>
+          </Notice>
+        )}
         {notes.length > 0 && <Legend className="mb-8 rounded-lg border border-rule bg-surface p-4 lg:hidden" />}
-        <div className="font-serif text-[1.1875rem] leading-[1.75]">
+        <div data-chapter={chapter} className="font-serif text-[1.1875rem] leading-[1.75]">
           {paragraphs.map((text, i) => (
             <Paragraph
               key={i}

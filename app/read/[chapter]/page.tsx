@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ChapterNav } from "@/components/reader/chapter-nav";
 import { Reader } from "@/components/reader/reader";
 import { TextLink } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getChapter } from "@/lib/book";
 import { CHAPTER_COUNT, isChapter } from "@/lib/chapters";
 import { getNotes } from "@/lib/notes";
@@ -16,13 +18,24 @@ export async function generateMetadata({ params }: PageProps<"/read/[chapter]">)
   return { title: `Chapter ${chapter}` };
 }
 
-export default async function ChapterPage({ params }: PageProps<"/read/[chapter]">) {
+// The chapter is read inside Suspense so navigating between chapters never blocks on params.
+export default function ChapterPage({ params }: PageProps<"/read/[chapter]">) {
+  return (
+    <div className="mx-auto max-w-[62rem] px-5 py-8 lg:py-12">
+      <Suspense fallback={<Skeleton lines={14} className="max-w-[38rem]" />}>
+        <Chapter params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function Chapter({ params }: { params: PageProps<"/read/[chapter]">["params"] }) {
   const { chapter } = await params;
   const n = Number(chapter);
   if (!isChapter(n) || String(n) !== chapter) notFound();
 
   return (
-    <div className="mx-auto max-w-[62rem] px-5 py-8 lg:py-12">
+    <>
       <nav aria-label="Breadcrumb" className="mb-6 font-sans text-sm">
         <ol className="flex items-center gap-2 text-muted">
           <li>
@@ -33,12 +46,14 @@ export default async function ChapterPage({ params }: PageProps<"/read/[chapter]
         </ol>
       </nav>
       <Reader
+        key={n}
         chapter={n}
         paragraphs={getChapter(n)}
         notes={getNotes(n)}
         heading={<h1 className="mb-6 font-serif text-3xl">Chapter {n}</h1>}
         after={<ChapterNav chapter={n} />}
+        resumable
       />
-    </div>
+    </>
   );
 }

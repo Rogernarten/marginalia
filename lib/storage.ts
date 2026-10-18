@@ -84,6 +84,11 @@ function subscribe(listener: () => void) {
   };
 }
 
+/** Saved data right now, for event handlers and effects. Browser only. */
+export function getSaved(): Saved {
+  return load();
+}
+
 /** Saved data, or null while it can't be known yet (server render and hydration). */
 export function useSaved(): Saved | null {
   return useSyncExternalStore(subscribe, load, () => null);
@@ -102,6 +107,19 @@ export function useCanSave(): boolean {
 /** True if this device has used the app before. */
 export function hasHistory(saved: Saved) {
   return saved.words.length > 0 || saved.position !== null || Object.keys(saved.days).length > 0;
+}
+
+/* ---------- Reading position ---------- */
+
+export function setPosition(chapter: number, paragraph: number) {
+  const current = load().position;
+  if (current?.chapter === chapter && current.paragraph === paragraph) return;
+  write((s) => ({ ...s, position: { chapter, paragraph, at: new Date().toISOString() } }));
+}
+
+/** Link that reopens a chapter at a paragraph. */
+export function positionHref(position: { chapter: number; paragraph: number }) {
+  return `/read/${position.chapter}#p-${position.paragraph}`;
 }
 
 /* ---------- Words ---------- */

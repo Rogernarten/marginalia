@@ -109,3 +109,22 @@ dialog.sheet {
 dialog.sheet::backdrop {
   background: rgb(42 35 28 / 0.4);
 }
+
+/* ---------- Picking up where you stopped ---------- */
+
+.resume-flash {
+  animation: resume-flash 2.4s ease-out;
+  outline: none;
+}
+@keyframes resume-flash {
+  from {
+    background: var(--color-saved);
+    box-shadow: -0.75rem 0 0 var(--color-saved), 0.75rem 0 0 var(--color-saved);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .resume-flash {
+    animation: none;
+    background: color-mix(in srgb, var(--color-saved) 60%, transparent);
+  }
+}
