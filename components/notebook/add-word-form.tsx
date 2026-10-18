@@ -11,10 +11,9 @@ import { showToast } from "@/components/ui/toast";
 import { loadChapter } from "@/lib/chapter-client";
 import { CHAPTER_COUNT, isChapter } from "@/lib/chapters";
 import { getNotes } from "@/lib/notes";
-import { addWord, findWord, getSaved, positionHref, setDraft, useSaved, type Saved } from "@/lib/storage";
+import { addWord, findWord, getSaved, noteError, positionHref, setDraft, useSaved, type Saved } from "@/lib/storage";
 import { findPhrase, normalize } from "@/lib/text";
-
-export const NOTE_MAX = 280;
+import { NoteCount } from "./note-editor";
 
 type Values = { phrase: string; chapter: number; note: string };
 type Field = keyof Values;
@@ -52,9 +51,8 @@ async function validate(v: Values) {
       }
     }
   }
-  if (v.note.length > NOTE_MAX) {
-    errors.note = `Shorten your note to ${NOTE_MAX} characters or fewer (now ${v.note.length}).`;
-  }
+  const tooLong = noteError(v.note);
+  if (tooLong) errors.note = tooLong;
   return { errors, found };
 }
 
@@ -172,8 +170,6 @@ export function AddWordForm() {
     focusField("phrase");
   }
 
-  const over = values.note.length > NOTE_MAX;
-
   return (
     <>
       <BackLink href={back.href}>{back.label}</BackLink>
@@ -229,11 +225,7 @@ export function AddWordForm() {
           error={errors.note}
           onChange={(e) => update("note", e.target.value)}
           onBlur={recheck}
-          aside={
-            <span className={over ? "font-semibold text-danger" : "text-muted"}>
-              {values.note.length} / {NOTE_MAX}
-            </span>
-          }
+          aside={<NoteCount note={values.note} />}
         />
         <div className="flex flex-wrap items-center gap-4 pt-2">
           <Button type="submit">{checking ? `Checking Chapter ${values.chapter}…` : "Save to notebook"}</Button>

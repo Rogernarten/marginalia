@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { arriveAt } from "@/components/reader/reading-position";
 import { Button, LinkButton } from "@/components/ui/button";
-import { TextAreaField } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getNotes } from "@/lib/notes";
 import { KIND_LABEL } from "@/lib/notes/types";
-import { positionHref, removeWord, restoreWord, updateNote, useSaved, type Word } from "@/lib/storage";
-import { NOTE_MAX } from "./add-word-form";
+import { positionHref, removeWord, restoreWord, useSaved, type Word } from "@/lib/storage";
+import { NoteEditor } from "./note-editor";
 
 /** Words grouped by chapter, in reading order. Removing leaves an Undo in the word's place. */
 export function NotebookList() {
@@ -124,26 +123,11 @@ function Highlighted({ sentence, phrase }: { sentence: string; phrase: string })
 function Entry({ word, onRemove }: { word: Word; onRemove: () => void }) {
   const note = word.noteId ? getNotes(word.chapter).find((n) => n.id === word.noteId) : undefined;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(word.myNote);
-  const [error, setError] = useState("");
   const editButton = useRef<HTMLButtonElement>(null);
   const position = { chapter: word.chapter, paragraph: word.paragraph };
 
-  function save() {
-    if (draft.length > NOTE_MAX) {
-      setError(`Shorten your note to ${NOTE_MAX} characters or fewer (now ${draft.length}).`);
-      return;
-    }
-    updateNote(word.id, draft.trim());
+  function doneEditing() {
     setEditing(false);
-    setError("");
-    requestAnimationFrame(() => editButton.current?.focus());
-  }
-
-  function cancel() {
-    setDraft(word.myNote);
-    setEditing(false);
-    setError("");
     requestAnimationFrame(() => editButton.current?.focus());
   }
 
@@ -159,27 +143,8 @@ function Entry({ word, onRemove }: { word: Word; onRemove: () => void }) {
       </blockquote>
 
       {editing ? (
-        <div className="mt-4 space-y-3">
-          <TextAreaField
-            id={`note-${word.id}`}
-            label="Your note"
-            value={draft}
-            error={error}
-            autoFocus
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && cancel()}
-            aside={
-              <span className={draft.length > NOTE_MAX ? "font-semibold text-danger" : "text-muted"}>
-                {draft.length} / {NOTE_MAX}
-              </span>
-            }
-          />
-          <div className="flex gap-3">
-            <Button onClick={save}>Save note</Button>
-            <Button variant="secondary" onClick={cancel}>
-              Cancel
-            </Button>
-          </div>
+        <div className="mt-4">
+          <NoteEditor word={word} onDone={doneEditing} />
         </div>
       ) : (
         word.myNote && (
@@ -197,10 +162,7 @@ function Entry({ word, onRemove }: { word: Word; onRemove: () => void }) {
           <Button
             ref={editButton}
             variant="quiet"
-            onClick={() => {
-              setDraft(word.myNote);
-              setEditing(true);
-            }}
+            onClick={() => setEditing(true)}
           >
             {word.myNote ? "Edit note" : "Add a note"}
             <span className="sr-only"> for “{word.phrase}”</span>

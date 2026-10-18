@@ -131,6 +131,15 @@ export function setDraft(draft: Saved["draft"]) {
 
 /* ---------- Words ---------- */
 
+export const NOTE_MAX = 280;
+
+/** The error for a note that's too long, or null. */
+export function noteError(note: string) {
+  return note.length > NOTE_MAX
+    ? `Shorten your note to ${NOTE_MAX} characters or fewer (now ${note.length}).`
+    : null;
+}
+
 export function findWord(saved: Saved, phrase: string) {
   const key = normalize(phrase);
   return saved.words.find((w) => normalize(w.phrase) === key);
