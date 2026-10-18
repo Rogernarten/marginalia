@@ -11,10 +11,10 @@ flowchart TD
   saved -- Yes --> home
 
   subgraph first["1 · First visit: useful right away"]
-    ch1["/ · Chapter 1 opens with underlines on<br/>Tip: Tap an underlined word"] --> tap["Tap “entail”"]
+    ch1["/ · Chapter 1 opens with underlines on<br/>Tip: Tap an underlined word"] --> tap["Tap “Michaelmas”"]
     tap --> margin["Margin: one-line hint<br/>→ More → Word notes"]
     margin --> quick["Save to notebook"]
-    quick --> toast["“Saved entail” · Undo<br/>the underline turns solid"]
+    quick --> toast["“In your notebook” · Undo<br/>the word turns shaded"]
   end
 
   subgraph task["2 · Main task: save a word"]
