@@ -4,7 +4,7 @@
 doesn't know, see what it meant in 1813, and save it to your notebook. Come back to pick up where
 you stopped and keep a weekly reading goal. Everything stays in your browser; there's no account.
 
-- **Live:** _(Vercel link, added after deploy)_
+- **Live:** https://marginalia-kappa-beryl.vercel.app/
 - **Code:** https://github.com/Rogernarten/marginalia
 
 Design, Build, Ship · Assignment 3: Patterns & Flows.

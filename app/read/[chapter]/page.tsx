@@ -14,7 +14,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/read/[chapter]">): Promise<Metadata> {
   const { chapter } = await params;
-  return { title: `Chapter ${chapter}` };
+  const n = Number(chapter);
+  return { title: isChapter(n) && String(n) === chapter ? `Chapter ${n}` : "Chapter not found" };
 }
 
 // The chapter is read inside Suspense so navigating between chapters never blocks on params.
