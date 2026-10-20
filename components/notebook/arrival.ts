@@ -6,9 +6,11 @@ export function showInNotebook(wordId: string) {
   arriving = wordId;
 }
 
-/** The word to scroll to on this visit: from showInNotebook(), or #word-ID in the URL. */
-export function takeArrival() {
-  const id = arriving ?? (window.location.hash.startsWith("#word-") ? window.location.hash.slice(6) : null);
+/** The word this visit should show: from showInNotebook(), or #word-ID in the URL. */
+export function arrivalWord() {
+  return arriving ?? (window.location.hash.startsWith("#word-") ? window.location.hash.slice(6) : null);
+}
+
+export function clearArrival() {
   arriving = null;
-  return id;
 }

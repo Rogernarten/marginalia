@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getNotes } from "@/lib/notes";
 import { KIND_LABEL } from "@/lib/notes/types";
 import { positionHref, removeWord, restoreWord, useSaved, type Word } from "@/lib/storage";
-import { takeArrival } from "./arrival";
+import { arrivalWord, clearArrival } from "./arrival";
 import { NoteEditor } from "./note-editor";
 
 /** Words grouped by chapter, in reading order. Removing leaves an Undo in the word's place. */
@@ -17,25 +17,37 @@ export function NotebookList() {
   const [removed, setRemoved] = useState<Record<string, Word>>({});
   const ready = saved !== null;
 
-  // After saving, or from "already in your notebook": show that word. Runs on every visit,
-  // including when Next.js re-shows this page from its hidden copy.
+  // After saving, or from "already in your notebook": show that word. Next.js re-shows this
+  // page from a hidden copy and may paint the old list first, so keep trying until the word
+  // is on the page, then show it once per visit.
+  const count = saved?.words.length ?? 0;
+  const shown = useRef<string | null>(null);
   useEffect(() => {
     if (!ready) return;
-    const id = takeArrival();
-    const el = id ? list.current?.querySelector<HTMLElement>(`#${CSS.escape(`word-${id}`)}`) : null;
+    const id = arrivalWord();
+    if (!id || shown.current === id) return;
+    const el = list.current?.querySelector<HTMLElement>(`#${CSS.escape(`word-${id}`)}`);
     if (!el) return;
+    shown.current = id;
+    clearArrival();
     el.scrollIntoView({ block: "center" });
     el.classList.remove("resume-flash");
     void el.offsetWidth;
     el.classList.add("resume-flash");
-  }, [ready]);
+  }, [ready, count]);
+  // Runs when the page is hidden (and on unmount), so the next visit can show a word again.
+  useEffect(
+    () => () => {
+      shown.current = null;
+    },
+    [],
+  );
 
   if (!saved) return <Skeleton lines={10} className="max-w-[38rem]" />;
 
   const words = [...saved.words, ...Object.values(removed)].sort(
     (a, b) => a.chapter - b.chapter || a.paragraph - b.paragraph || a.savedAt.localeCompare(b.savedAt),
   );
-  const count = saved.words.length;
   const chapters = [...new Set(words.map((w) => w.chapter))];
   const startHref = saved.position ? positionHref(saved.position) : "/read/1";
 
