@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getNotes } from "@/lib/notes";
 import { KIND_LABEL } from "@/lib/notes/types";
 import { positionHref, removeWord, restoreWord, useSaved, type Word } from "@/lib/storage";
+import { takeArrival } from "./arrival";
 import { NoteEditor } from "./note-editor";
 
 /** Words grouped by chapter, in reading order. Removing leaves an Undo in the word's place. */
@@ -16,11 +17,12 @@ export function NotebookList() {
   const [removed, setRemoved] = useState<Record<string, Word>>({});
   const ready = saved !== null;
 
-  // /notebook#word-ID (after saving, or from "already in your notebook"): show that word.
+  // After saving, or from "already in your notebook": show that word. Runs on every visit,
+  // including when Next.js re-shows this page from its hidden copy.
   useEffect(() => {
     if (!ready) return;
-    const id = window.location.hash.slice(1);
-    const el = id.startsWith("word-") ? list.current?.querySelector<HTMLElement>(`#${CSS.escape(id)}`) : null;
+    const id = takeArrival();
+    const el = id ? list.current?.querySelector<HTMLElement>(`#${CSS.escape(`word-${id}`)}`) : null;
     if (!el) return;
     el.scrollIntoView({ block: "center" });
     el.classList.remove("resume-flash");

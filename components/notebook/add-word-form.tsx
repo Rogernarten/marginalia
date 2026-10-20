@@ -13,6 +13,7 @@ import { CHAPTER_COUNT, isChapter } from "@/lib/chapters";
 import { getNotes } from "@/lib/notes";
 import { addWord, findWord, getSaved, noteError, positionHref, setDraft, useSaved, type Saved } from "@/lib/storage";
 import { findPhrase, normalize } from "@/lib/text";
+import { showInNotebook } from "./arrival";
 import { NoteCount } from "./note-editor";
 
 type Values = { phrase: string; chapter: number; note: string };
@@ -34,8 +35,12 @@ async function validate(v: Values) {
       errors.phrase = (
         <>
           “{existing.phrase}” is already in your notebook.{" "}
-          <TextLink href={`/notebook#word-${existing.id}`} className="text-danger decoration-danger">
-            Open it to add a note
+          <TextLink
+            href={`/notebook#word-${existing.id}`}
+            onClick={() => showInNotebook(existing.id)}
+            className="text-danger decoration-danger"
+          >
+            {existing.myNote ? "Open it to see your note" : "Open it to add a note"}
           </TextLink>
           .
         </>
@@ -79,6 +84,11 @@ export function AddWordForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
   const [checking, setChecking] = useState(false);
+  // After the first submit, errors re-check while you type. Not on blur: clearing an error on
+  // blur moved the Save button out from under the click that caused the blur.
+  const recheckTimer = useRef<number | undefined>(undefined);
+  const checkRun = useRef(0);
+  const pointerDown = useRef(false);
   const phraseRef = useRef<HTMLInputElement>(null);
   const chapterRef = useRef<HTMLSelectElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -111,20 +121,29 @@ export function AddWordForm() {
     const next = { ...values, [field]: value };
     setValues(next);
     setDraft(next);
+    if (submitted) recheck(next);
   }
 
-  // After the first submit, re-check on blur so fixed errors clear as soon as you move on.
-  async function recheck() {
-    if (!submitted) return;
-    setErrors((await validate(values)).errors);
+  function recheck(next: Values) {
+    window.clearTimeout(recheckTimer.current);
+    recheckTimer.current = window.setTimeout(async () => {
+      // Mid-click: wait, so the layout can't shift between press and release.
+      if (pointerDown.current) return recheck(next);
+      const run = ++checkRun.current;
+      const { errors: fresh } = await validate(next);
+      if (run === checkRun.current) setErrors(fresh);
+    }, 350);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (checking) return;
+    window.clearTimeout(recheckTimer.current);
+    const run = ++checkRun.current; // newer than any re-check still in flight
     setSubmitted(true);
     setChecking(true);
     const { errors: next, found } = await validate(values);
+    if (run !== checkRun.current) return;
     setChecking(false);
     setErrors(next);
     const firstError = ORDER.find((f) => next[f]);
@@ -157,6 +176,7 @@ export function AddWordForm() {
       message: `Saved “${found.match}” to your notebook.`,
       action: { label: `Back to Chapter ${values.chapter}`, href: `/read/${values.chapter}` },
     });
+    showInNotebook(result.word.id);
     router.push(`/notebook#word-${result.word.id}`);
   }
 
@@ -187,7 +207,14 @@ export function AddWordForm() {
         </Notice>
       )}
 
-      <form noValidate onSubmit={submit} className="mt-8 space-y-6">
+      <form
+        noValidate
+        onSubmit={submit}
+        onPointerDown={() => (pointerDown.current = true)}
+        onPointerUp={() => (pointerDown.current = false)}
+        onPointerCancel={() => (pointerDown.current = false)}
+        className="mt-8 space-y-6"
+      >
         <TextField
           ref={phraseRef}
           id="phrase"
@@ -199,7 +226,6 @@ export function AddWordForm() {
           value={values.phrase}
           error={errors.phrase}
           onChange={(e) => update("phrase", e.target.value)}
-          onBlur={recheck}
         />
         <SelectField
           ref={chapterRef}
@@ -208,7 +234,6 @@ export function AddWordForm() {
           value={values.chapter}
           error={errors.chapter}
           onChange={(e) => update("chapter", Number(e.target.value))}
-          onBlur={recheck}
         >
           {Array.from({ length: CHAPTER_COUNT }, (_, i) => (
             <option key={i + 1} value={i + 1}>
@@ -225,7 +250,6 @@ export function AddWordForm() {
           value={values.note}
           error={errors.note}
           onChange={(e) => update("note", e.target.value)}
-          onBlur={recheck}
           aside={<NoteCount note={values.note} />}
         />
         <div className="flex flex-wrap items-center gap-4 pt-2">

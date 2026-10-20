@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { showInNotebook } from "@/components/notebook/arrival";
 import { arriveAt } from "@/components/reader/reading-position";
 import { LinkButton, TextLink } from "@/components/ui/button";
 import { cx, FOCUS } from "@/components/ui/cx";
@@ -200,7 +201,11 @@ function RecentWords({ words }: { words: Saved["words"] }) {
             const hint = w.noteId ? getNotes(w.chapter).find((n) => n.id === w.noteId)?.short : undefined;
             return (
               <li key={w.id}>
-                <Link href={`/notebook#word-${w.id}`} className={cx("group block rounded-sm py-3", FOCUS)}>
+                <Link
+                  href={`/notebook#word-${w.id}`}
+                  onClick={() => showInNotebook(w.id)}
+                  className={cx("group block rounded-sm py-3", FOCUS)}
+                >
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-serif text-lg group-hover:underline">{w.phrase}</span>
                     <span className="shrink-0 font-sans text-xs text-muted">Chapter {w.chapter}</span>

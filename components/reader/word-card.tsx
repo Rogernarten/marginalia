@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { NoteEditor } from "@/components/notebook/note-editor";
 import { Button, LinkButton } from "@/components/ui/button";
 import { cx, FOCUS } from "@/components/ui/cx";
+import { showInNotebook } from "@/components/notebook/arrival";
 import { restoreWord, type Word } from "@/lib/storage";
 
 /**
@@ -99,7 +100,7 @@ export function WordCard({
             <Button ref={editButton} variant="secondary" onClick={() => setEditing(true)}>
               {word.myNote ? "Edit note" : "Add a note"}
             </Button>
-            <LinkButton variant="quiet" href={`/notebook#word-${word.id}`}>
+            <LinkButton variant="quiet" href={`/notebook#word-${word.id}`} onClick={() => showInNotebook(word.id)}>
               Open in notebook
             </LinkButton>
             <Button
