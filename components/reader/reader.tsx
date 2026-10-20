@@ -198,7 +198,7 @@ export function Reader({
       </article>
 
       <aside aria-label="Notes" className="hidden lg:block">
-        <div className="sticky top-6 rounded-lg border border-rule bg-surface p-5">
+        <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto overscroll-contain rounded-lg border border-rule bg-surface p-5">
           {wide && card ? (
             card
           ) : (

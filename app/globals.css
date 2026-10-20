@@ -58,7 +58,7 @@ html {
   text-decoration-color: var(--color-word);
 }
 .note-word:hover {
-  background: color-mix(in srgb, var(--color-saved) 55%, transparent);
+  background: color-mix(in srgb, var(--color-rule) 55%, transparent);
 }
 .note-word[data-saved="true"] {
   background: var(--color-saved);
@@ -71,9 +71,9 @@ html {
 .note-word[data-kind="mine"]:hover {
   background: #ecd595;
 }
+/* The word whose note is open: a ring, so it never looks saved when it isn't. */
 .note-word[aria-expanded="true"] {
-  background: var(--color-saved);
-  box-shadow: 0 2px 0 var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-ink);
 }
 .note-word:focus-visible {
   outline: 2px solid var(--color-ink);

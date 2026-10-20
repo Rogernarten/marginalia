@@ -5,7 +5,7 @@ import { NoteEditor } from "@/components/notebook/note-editor";
 import { Button } from "@/components/ui/button";
 import { cx, FOCUS } from "@/components/ui/cx";
 import { KIND_LABEL, MORE_LABEL, type Note } from "@/lib/notes/types";
-import { addWord, findWord, removeWord, useSaved } from "@/lib/storage";
+import { addWord, findWord, removeWord, restoreWord, useSaved, type Word } from "@/lib/storage";
 import { sentenceAt } from "@/lib/text";
 
 /** The note shown in the margin (wide screens) or the bottom sheet (small screens). */
@@ -25,20 +25,22 @@ export function NoteCard({
 }) {
   const saved = useSaved();
   const [more, setMore] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
   const [editing, setEditing] = useState(false);
-  const editButton = useRef<HTMLButtonElement>(null);
+  // Kept after Remove so Undo can put the word back with its note.
+  const [removed, setRemoved] = useState<Word | null>(null);
   const [status, setStatus] = useState("");
-  // The Save and Remove buttons swap places; keep focus on whichever replaced the one pressed.
-  const refocus = useRef(false);
-  const actionRef = useRef<HTMLButtonElement>(null);
+  const editButton = useRef<HTMLButtonElement>(null);
+  const undoButton = useRef<HTMLButtonElement>(null);
+  // Buttons swap as you save, remove and undo; keep focus on the one that replaced yours.
+  const refocus = useRef<"edit" | "undo" | null>(null);
   const inNotebook = saved ? findWord(saved, note.phrase) : undefined;
   const headingId = `${note.id}-heading`;
 
   useEffect(() => {
-    if (!refocus.current) return;
-    refocus.current = false;
-    actionRef.current?.focus();
+    const target = refocus.current;
+    refocus.current = null;
+    if (target === "edit") editButton.current?.focus();
+    if (target === "undo") undoButton.current?.focus();
   }, [inNotebook]);
 
   function save() {
@@ -50,8 +52,7 @@ export function NoteCard({
       noteId: note.id,
       myNote: "",
     });
-    setJustSaved(result.ok);
-    refocus.current = true;
+    refocus.current = "edit";
     setStatus(
       result.ok
         ? `Saved “${note.phrase}” to your notebook.`
@@ -61,10 +62,18 @@ export function NoteCard({
 
   function remove() {
     if (!inNotebook) return;
+    setRemoved(inNotebook);
     removeWord(inNotebook.id);
-    setJustSaved(false);
-    refocus.current = true;
+    refocus.current = "undo";
     setStatus(`Removed “${note.phrase}” from your notebook.`);
+  }
+
+  function undo() {
+    if (!removed) return;
+    restoreWord(removed);
+    setRemoved(null);
+    refocus.current = "edit";
+    setStatus(`Put “${note.phrase}” back in your notebook.`);
   }
 
   return (
@@ -144,15 +153,20 @@ export function NoteCard({
               <Button ref={editButton} variant="secondary" onClick={() => setEditing(true)}>
                 {inNotebook.myNote ? "Edit note" : "Add a note"}
               </Button>
-              <Button ref={actionRef} variant="quiet" onClick={remove}>
-                {justSaved ? "Undo" : "Remove"}
+              <Button variant="quiet" onClick={remove}>
+                Remove
               </Button>
             </>
           )
+        ) : removed ? (
+          <>
+            <p className="mr-2 text-[0.9375rem]">Removed from your notebook.</p>
+            <Button ref={undoButton} variant="secondary" onClick={undo}>
+              Undo
+            </Button>
+          </>
         ) : (
-          <Button ref={actionRef} onClick={save}>
-            Save to notebook
-          </Button>
+          <Button onClick={save}>Save to notebook</Button>
         )}
       </div>
       <p role="status" className="sr-only">
