@@ -49,7 +49,7 @@ const ABBREVIATIONS = /\b(Mr|Mrs|Dr|St|Col|Capt)\.$/;
 /** The sentence of `paragraph` that contains character `index`, without italics markers. */
 export function sentenceAt(paragraph: string, index: number) {
   const ends: number[] = [];
-  const boundary = /[.!?]+[”’"]?(?=\s+[“"‘A-Z])/g;
+  const boundary = /[.!?]+[”’"]?(?=\s+_?[“"‘A-Z])/g;
   for (const m of paragraph.matchAll(boundary)) {
     const end = m.index + m[0].length;
     if (!ABBREVIATIONS.test(paragraph.slice(0, end))) ends.push(end);
