@@ -159,8 +159,47 @@ for contrast. Full details, the contrast table and the keyboard map:
 
 ## First-run check
 
-_(The agent's usability feedback as a brand-new user of the live site, and what changed because of
-it, goes here after deploy.)_
+Once the site was live, a fresh agent with no access to the code or this conversation got the URL
+and a goal: *“I'm reading Pride and Prejudice in English for a class and keep tripping over
+old-fashioned words. Save three words I didn't know from Chapter 1, with a note on at least one.”*
+It used the site in Chrome at 1440px and 390px and with the keyboard alone, then shifted its saved
+dates back eight days and came back “a week later”.
+
+**First impression, in its words:** “It was clear right away… an annotated Pride and Prejudice
+where I tap underlined words. The text of Chapter 1 is on the home page, so I knew what to do at
+once.”
+
+**What worked for it:** the hint card with More, saving in one click, the count in the navigation,
+saved words shaded in the text, a selected word carried into the form, specific error messages,
+and “Open in Chapter 1” landing on the right paragraph. Keyboard use was “very good”. Coming back,
+it was greeted with “Welcome back. New week, fresh start: 0 of 3 days.”, and Continue took it to
+the exact paragraph: “Picking up was obvious.”
+
+**What it found, and what I changed:**
+
+| Found | Changed |
+|---|---|
+| After fixing a misspelling, the first click on Save did nothing: the error cleared on blur, Save jumped up about 48px, and the click missed. The old error also stayed up while typing | Errors re-check while you type (after a short pause), never on blur and never mid-click. One click saves |
+| In the margin, “Undo” sat next to “Edit note” and deleted the word and its note; Remove had no undo | After saving: Add a note and Remove. Remove leaves an Undo that brings the word back with its note |
+| The word whose note was open turned the same yellow as saved words, so unsaved words looked saved | The open word gets an ink ring. Yellow means saved and nothing else; hover is a pale tan |
+| The sentence saved with *caprice* ran on into the next one | Sentences that start with an italic word (*Her*) now split correctly |
+| After a second save, the notebook didn't scroll to the new word | It scrolls to and highlights every newly saved word |
+| “Open it to add a note” even when the word already had a note | It says “Open it to see your note” then |
+| With More open, the margin ran past the bottom of the screen and hid Save note | The margin fits the screen and scrolls inside |
+
+**Heard, and kept for the next version.** I fixed every bug first; these are the bigger changes
+it suggested:
+
+- Saving a word that isn't underlined is slow: select it, scroll back to **+ Add a word** at the
+  top, then land in the notebook. Its top request was a Save button right at the selection.
+- When a word isn't in the chosen chapter, search the whole book (“It's in Chapter 1”).
+- On a phone, the sheet can cover the word you tapped, and the phone legend leaves out the
+  + Add a word hint.
+- Welcome back doesn't say when you last read, and Tab reaches the weekly goal before your latest
+  words.
+- The weekly goal is the only nudge to return; it wanted review and export of saved words. When
+  planning I chose picking up the book and a reading goal over flashcards, so review is the next
+  feature I'd add.
 
 ## How I worked with the agent
 
